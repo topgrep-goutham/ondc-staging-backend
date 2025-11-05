@@ -300,12 +300,13 @@ class ONDCService {
             console.log('Message ID:', payload.context.message_id);
 
             // Create authorization header using ONDC SDK
-            const authHeader = await authManager.createAuthHeader(payload);
+            const minifiedPayload = JSON.parse(JSON.stringify(payload));
+            const authHeader = await authManager.createAuthHeader(minifiedPayload);
 
             console.log('Auth header created:', authHeader.substring(0, 100) + '...');
 
             // Send request
-            const response = await axios.post(endpoint, payload, {
+            const response = await axios.post(endpoint, minifiedPayload, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': authHeader
