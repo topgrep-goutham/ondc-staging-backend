@@ -285,10 +285,10 @@ class ONDCService {
             timestamp: new Date().toISOString(),
             ttl: 'PT30S'
         };
-        
+
         if (bppId) context.bpp_id = bppId;
         if (bppUri) context.bpp_uri = bppUri;
-        
+
         return context;
     }
 
@@ -298,12 +298,12 @@ class ONDCService {
             console.log(`\n📤 Sending ${payload.context.action} request to:`, endpoint);
             console.log('Transaction ID:', payload.context.transaction_id);
             console.log('Message ID:', payload.context.message_id);
-            
+
             // Create authorization header using ONDC SDK
             const authHeader = await authManager.createAuthHeader(payload);
-            
+
             console.log('Auth header created:', authHeader.substring(0, 100) + '...');
-            
+
             // Send request
             const response = await axios.post(endpoint, payload, {
                 headers: {
@@ -312,22 +312,22 @@ class ONDCService {
                 },
                 timeout: 30000
             });
-            
+
             console.log('✅ Request sent successfully');
-            
+
             // Check for ACK/NACK
             if (response.data.message?.ack?.status === 'NACK') {
                 console.error('❌ Request rejected (NACK):', response.data.error);
                 return { success: false, error: response.data.error };
             }
-            
+
             return { success: true, data: response.data };
-            
+
         } catch (error) {
             console.error('❌ ONDC request error:', error.response?.data || error.message);
-            return { 
-                success: false, 
-                error: error.response?.data || error.message 
+            return {
+                success: false,
+                error: error.response?.data || error.message
             };
         }
     }
@@ -336,7 +336,7 @@ class ONDCService {
     async search(searchIntent) {
         const transactionId = ondcCrypto.generateTransactionId();
         const messageId = ondcCrypto.generateMessageId();
-        
+
         const payload = {
             context: this.createContext('search', transactionId, messageId),
             message: {
@@ -361,12 +361,12 @@ class ONDCService {
                 }
             }
         };
-        
+
         const result = await this.sendRequest(
             `${config.ondc.gatewayUrl}/search`,
             payload
         );
-        
+
         return { ...result, transactionId, messageId, payload };
     }
 
