@@ -14,8 +14,6 @@ class CallbackController {
             // Process catalog asynchronously
             const { context, message } = req.body;
             
-            console.log('Received catalog from:', context.bpp_id);
-            console.log('Catalog items:', message.catalog?.bpp_providers?.length || 0);
             
             // TODO: Store catalog in database
             // TODO: Notify user/update UI
@@ -36,8 +34,6 @@ class CallbackController {
             
             const { context, message } = req.body;
             
-            console.log('Received quote for transaction:', context.transaction_id);
-            console.log('Quote:', message.order?.quote);
             
             // TODO: Store quote in database
             // TODO: Update order status
@@ -58,9 +54,6 @@ class CallbackController {
             
             const { context, message } = req.body;
             
-            console.log('Order initialized:', context.transaction_id);
-            console.log('Payment terms:', message.order?.payment);
-            
             // TODO: Store init response
             // TODO: Prepare for confirmation
             
@@ -79,9 +72,6 @@ class CallbackController {
             });
             
             const { context, message } = req.body;
-            
-            console.log('Order confirmed:', message.order?.id);
-            console.log('Order state:', message.order?.state);
             
             // TODO: Store confirmed order in database
             // TODO: Send confirmation to user
@@ -103,9 +93,6 @@ class CallbackController {
             
             const { context, message } = req.body;
             
-            console.log('Order status update:', message.order?.id);
-            console.log('Current state:', message.order?.state);
-            
             // TODO: Update order status in database
             // TODO: Notify user of status change
             
@@ -124,9 +111,6 @@ class CallbackController {
             });
             
             const { context, message } = req.body;
-            
-            console.log('Order cancelled:', message.order?.id);
-            console.log('Cancellation reason:', message.order?.cancellation_reason);
             
             // TODO: Update order as cancelled
             // TODO: Process refund if applicable
@@ -147,8 +131,6 @@ class CallbackController {
             
             const { context, message } = req.body;
             
-            console.log('Order updated:', message.order?.id);
-            
             // TODO: Update order in database
             
         } catch (error) {
@@ -166,8 +148,6 @@ class CallbackController {
             });
             
             const { context, message } = req.body;
-            
-            console.log('Tracking info received:', message.tracking);
             
             // TODO: Store tracking information
             

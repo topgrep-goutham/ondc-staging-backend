@@ -22,13 +22,12 @@ class ONDCCrypto {
         try {
 
             const header = await createAuthorizationHeader({
-                body: body,
+                body: JSON.stringify(body),
                 privateKey: this.privateKey,
                 subscriberId: this.subscriberId,
                 subscriberUniqueKeyId: this.subscriberUniqueKeyId
             });
 
-            console.log(header)
             return header;
 
         } catch (error) {
@@ -49,7 +48,7 @@ class ONDCCrypto {
 
             const isValid = await isHeaderValid({
                 header: header,
-                body: body,
+                body: JSON.stringify(body),
                 publicKey: publicKey
             });
 
@@ -59,7 +58,7 @@ class ONDCCrypto {
                 console.error('❌ Authorization header verification failed');
             }
 
-            return isValid;
+            return { valid: isValid };
 
         } catch (error) {
             console.error('❌ Error verifying auth header:', error.message);

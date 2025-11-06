@@ -41,7 +41,6 @@
 //                 },
 //                 timeout: 30000
 //             });
-//             console.log(response.data)
 
 //             // Check for ACK/NACK
 //             if (response.data.message?.ack?.status === 'NACK') {
@@ -295,18 +294,14 @@ class ONDCService {
     // Send ONDC request with ONDC SDK signature
     async sendRequest(endpoint, payload) {
         try {
-            console.log(`\n📤 Sending ${payload.context.action} request to:`, endpoint);
-            console.log('Transaction ID:', payload.context.transaction_id);
-            console.log('Message ID:', payload.context.message_id);
 
             // Create authorization header using ONDC SDK
-            const minifiedPayload = JSON.parse(JSON.stringify(payload));
-            const authHeader = await authManager.createAuthHeader(minifiedPayload);
+            // const minifiedPayload = JSON.parse(JSON.stringify(payload));
+            const authHeader = await authManager.createAuthHeader(payload);
 
-            console.log('Auth header created:', authHeader.substring(0, 100) + '...');
 
             // Send request
-            const response = await axios.post(endpoint, minifiedPayload, {
+            const response = await axios.post(endpoint, payload, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': authHeader
@@ -314,7 +309,6 @@ class ONDCService {
                 timeout: 30000
             });
 
-            console.log('✅ Request sent successfully');
 
             // Check for ACK/NACK
             if (response.data.message?.ack?.status === 'NACK') {
@@ -354,11 +348,11 @@ class ONDCService {
                                 gps: searchIntent.gps || '12.9716,77.5946'
                             }
                         }
-                    },
-                    payment: {
-                        '@ondc/org/buyer_app_finder_fee_type': 'percent',
-                        '@ondc/org/buyer_app_finder_fee_amount': '3'
                     }
+                },
+                payment: {
+                    '@ondc/org/buyer_app_finder_fee_type': 'percent',
+                    '@ondc/org/buyer_app_finder_fee_amount': '3'
                 }
             }
         };

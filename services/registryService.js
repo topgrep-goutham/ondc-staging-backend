@@ -115,6 +115,7 @@
 const axios = require('axios');
 const config = require('../config/config');
 const ondcCrypto = require('../utils/ondcCrypto');
+const authManager = require('../utils/authorization');
 
 class RegistryService {
     constructor() {
@@ -133,29 +134,31 @@ class RegistryService {
         if (this.cache.has(cacheKey)) {
             const cached = this.cache.get(cacheKey);
             if (Date.now() - cached.timestamp < this.cacheTimeout) {
-                console.log('✓ Registry lookup (cached):', subscriberId);
                 return cached.data;
             }
         }
 
         try {
-            console.log('📡 Fetching from registry:', subscriberId);
 
             // Call registry API
             const lookupData = {
-                subscriber_id: subscriberId
+                'subscriber_id': subscriberId,
+                'type': 'BPP'
             };
+
+            const authHeader = await authManager.createAuthHeader(lookupData);
 
             if (ukId) {
                 lookupData.ukId = ukId;
             }
 
             const response = await axios.post(
-                `${config.ondc.registryUrl}/lookup`,
+                `${config.ondc.registryUrl}/v2.0/lookup`,
                 lookupData,
                 {
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': authHeader
                     },
                     timeout: 10000
                 }
@@ -164,11 +167,6 @@ class RegistryService {
             if (response.data && response.data.length > 0) {
                 const entry = response.data[0];
 
-                console.log('✓ Registry entry found:', {
-                    subscriber_id: entry.subscriber_id,
-                    type: entry.type,
-                    status: entry.status
-                });
 
                 // Cache the result
                 this.cache.set(cacheKey, {
@@ -187,7 +185,6 @@ class RegistryService {
 
             // Try to return cached data even if expired
             if (this.cache.has(cacheKey)) {
-                console.log('⚠ Using expired cache for:', subscriberId);
                 return this.cache.get(cacheKey).data;
             }
 
@@ -200,7 +197,6 @@ class RegistryService {
      */
     async vLookup(params) {
         try {
-            console.log('📡 Performing vLookup for:', params.subscriber_id);
 
             // Create vLookup signature using ONDC SDK
             const signature = await ondcCrypto.createVLookupSignature({
@@ -236,10 +232,10 @@ class RegistryService {
                 }
             );
 
-            console.log('✓ vLookup successful');
             return response.data;
 
         } catch (error) {
+            console.log("lookup error", error.message)
             console.error('❌ vLookup error:', error.response?.data || error.message);
             throw error;
         }
@@ -253,7 +249,6 @@ class RegistryService {
     }
 
     async refreshCache() {
-        console.log('🔄 Refreshing registry cache...');
         const entries = Array.from(this.cache.entries());
 
         for (const [key, value] of entries) {
@@ -268,7 +263,6 @@ class RegistryService {
 
     clearCache() {
         this.cache.clear();
-        console.log('✓ Registry cache cleared');
     }
 }
 

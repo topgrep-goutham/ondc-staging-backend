@@ -31,7 +31,6 @@ class Logger {
 
     writeLog(level, message, data = null) {
         const formattedMessage = this.formatMessage(level, message, data);
-        console.log(formattedMessage);
         
         // Write to file
         fs.appendFileSync(this.getLogFileName(), formattedMessage);

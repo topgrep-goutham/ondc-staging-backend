@@ -164,13 +164,124 @@
 
 // module.exports = new AuthorizationManager();
 
+
+
+
+// const ondcCrypto = require('./ondcCrypto');
+// const registryService = require('../services/registryService');
+
+// class AuthorizationManager {
+//     /**
+//      * Create authorization header for outgoing requests using ONDC SDK
+//      */
+//     async createAuthHeader(requestBody) {
+//         try {
+//             const header = await ondcCrypto.createAuthHeader(requestBody);
+//             return header;
+//         } catch (error) {
+//             console.error('Error creating authorization header:', error);
+//             throw error;
+//         }
+//     }
+
+//     /**
+//      * Verify authorization header for incoming requests using ONDC SDK
+//      */
+//     async verifyAuthHeader(authHeader, requestBody) {
+//         try {
+
+//             // Parse authorization header to get subscriber info
+//             const params = this.parseAuthHeader(authHeader);
+//             console.log(params)
+
+//             if (!params.signature || !params.keyId) {
+//                 throw new Error('Missing required authorization parameters');
+//             }
+
+//             // Extract subscriber_id and ukId from keyId
+//             const [subscriberId, ukId, algorithm] = params.keyId.split('|');
+
+//             if (algorithm !== 'ed25519') {
+//                 throw new Error('Unsupported algorithm: ' + algorithm);
+//             }
+
+
+//             // Get public key from registry
+//             const registryEntry = await registryService.lookup(subscriberId, ukId);
+
+//             if (!registryEntry) {
+//                 throw new Error('Subscriber not found in registry: ' + subscriberId);
+//             }
+
+
+//             if (registryEntry.status !== 'SUBSCRIBED') {
+//                 throw new Error('Subscriber not in SUBSCRIBED status');
+//             }
+
+//             // Get signing public key
+//             const signingPublicKey = registryEntry.signing_public_key;
+
+//             if (!signingPublicKey) {
+//                 throw new Error('Signing public key not found in registry');
+//             }
+
+
+//             // Verify signature using ONDC SDK
+//             const isValid = await ondcCrypto.verifyAuthHeader(
+//                 authHeader,
+//                 requestBody,
+//                 signingPublicKey
+//             );
+//             console.log("isValid", isValid)
+
+//             if (!isValid) {
+//                 throw new Error('Signature verification failed');
+//             }
+
+
+//             // Check expiry
+//             if (params.expires) {
+//                 const now = Math.floor(Date.now() / 1000);
+//                 if (now > parseInt(params.expires)) {
+//                     throw new Error('Request has expired');
+//                 }
+//             }
+
+//             return { valid: true, subscriberId, ukId };
+
+//         } catch (error) {
+//             console.log("auth error", error.message)
+//             console.error('❌ Authorization verification error:', error.message);
+//             return { valid: false, error: error.message };
+//         }
+//     }
+
+//     /**
+//      * Parse authorization header
+//      */
+//     parseAuthHeader(authHeader) {
+//         const params = {};
+//         const headerValue = authHeader.replace(/^Signature\s+/i, '');
+//         const regex = /(\w+)=["']?([^"',]+)["']?/g;
+//         let match;
+
+//         while ((match = regex.exec(headerValue)) !== null) {
+//             params[match[1]] = match[2];
+//         }
+
+//         return params;
+//     }
+// }
+
+// module.exports = new AuthorizationManager();
+
+
+// utils/authorization.js
 const ondcCrypto = require('./ondcCrypto');
-const registryService = require('../services/registryService');
+// ❌ remove this line:
+// const registryService = require('./services/registryService');
 
 class AuthorizationManager {
-    /**
-     * Create authorization header for outgoing requests using ONDC SDK
-     */
     async createAuthHeader(requestBody) {
         try {
             const header = await ondcCrypto.createAuthHeader(requestBody);
@@ -181,97 +292,45 @@ class AuthorizationManager {
         }
     }
 
-    /**
-     * Verify authorization header for incoming requests using ONDC SDK
-     */
     async verifyAuthHeader(authHeader, requestBody) {
         try {
-            console.log('\n🔐 Verifying incoming request signature...');
-            
-            // Parse authorization header to get subscriber info
+            // ✅ lazy-require here to avoid circular import
+            const registryService = require('../services/registryService'); // <-- fixed path
+
             const params = this.parseAuthHeader(authHeader);
-            
-            if (!params.signature || !params.keyId) {
-                throw new Error('Missing required authorization parameters');
-            }
-            
-            console.log('KeyId:', params.keyId);
-            
-            // Extract subscriber_id and ukId from keyId
+            if (!params.signature || !params.keyId) throw new Error('Missing required authorization parameters');
+
             const [subscriberId, ukId, algorithm] = params.keyId.split('|');
-            
-            if (algorithm !== 'ed25519') {
-                throw new Error('Unsupported algorithm: ' + algorithm);
-            }
-            
-            console.log('Subscriber ID:', subscriberId);
-            console.log('UK ID:', ukId);
-            
-            // Get public key from registry
-            console.log('Looking up registry for:', subscriberId);
+            if (algorithm !== 'ed25519') throw new Error('Unsupported algorithm: ' + algorithm);
+
             const registryEntry = await registryService.lookup(subscriberId, ukId);
-            
-            if (!registryEntry) {
-                throw new Error('Subscriber not found in registry: ' + subscriberId);
-            }
-            
-            console.log('✅ Registry entry found. Status:', registryEntry.status);
-            
-            if (registryEntry.status !== 'SUBSCRIBED') {
-                throw new Error('Subscriber not in SUBSCRIBED status');
-            }
-            
-            // Get signing public key
+            if (!registryEntry) throw new Error('Subscriber not found in registry: ' + subscriberId);
+            if (registryEntry.status !== 'SUBSCRIBED') throw new Error('Subscriber not in SUBSCRIBED status');
+
             const signingPublicKey = registryEntry.signing_public_key;
-            
-            if (!signingPublicKey) {
-                throw new Error('Signing public key not found in registry');
-            }
-            
-            console.log('Public key found (length):', signingPublicKey.length);
-            
-            // Verify signature using ONDC SDK
-            const isValid = await ondcCrypto.verifyAuthHeader(
-                authHeader,
-                requestBody,
-                signingPublicKey
-            );
-            
-            if (!isValid) {
-                throw new Error('Signature verification failed');
-            }
-            
-            console.log('✅ Signature verified successfully');
-            
-            // Check expiry
+            if (!signingPublicKey) throw new Error('Signing public key not found in registry');
+
+            const isValid = await ondcCrypto.verifyAuthHeader(authHeader, requestBody, signingPublicKey);
+            if (!isValid) throw new Error('Signature verification failed');
+
             if (params.expires) {
                 const now = Math.floor(Date.now() / 1000);
-                if (now > parseInt(params.expires)) {
-                    throw new Error('Request has expired');
-                }
+                if (now > parseInt(params.expires, 10)) throw new Error('Request has expired');
             }
-            
+
             return { valid: true, subscriberId, ukId };
-            
         } catch (error) {
             console.error('❌ Authorization verification error:', error.message);
             return { valid: false, error: error.message };
         }
     }
 
-    /**
-     * Parse authorization header
-     */
     parseAuthHeader(authHeader) {
         const params = {};
         const headerValue = authHeader.replace(/^Signature\s+/i, '');
         const regex = /(\w+)=["']?([^"',]+)["']?/g;
         let match;
-        
-        while ((match = regex.exec(headerValue)) !== null) {
-            params[match[1]] = match[2];
-        }
-        
+        while ((match = regex.exec(headerValue)) !== null) params[match[1]] = match[2];
         return params;
     }
 }

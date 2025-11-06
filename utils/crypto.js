@@ -297,7 +297,6 @@ class CryptoUtils {
         await _sodium.ready;
         this.sodium = _sodium;
         this.initialized = true;
-        console.log('✓ Crypto utilities initialized');
     }
 
     // Ensure initialization before using sodium
@@ -402,7 +401,7 @@ class CryptoUtils {
                 throw new Error(`Invalid Ed25519 public key length: ${publicKeyBytes.length} (expected 32)`);
             }
 
-            const valid = this.sodium.crypto_sign_verify_detached(signatureBytes, messageBytes, publicKeyBytes);
+            const valid = this.sodium.crypto_sign_verify_detached(signatureBase64, message, publicKeyBase64);
             return !!valid;
         } catch (error) {
             console.error('Signature verification failed:', error && error.message ? error.message : error);
@@ -449,7 +448,7 @@ class CryptoUtils {
                 `algorithm="ed25519"`,
                 `created="${createdTs}"`,
                 `expires="${expiresTs}"`,
-                `headers="(created) (expires) digest"`,
+                `headers="(created)(expires)digest"`,
                 `signature="${signatureBase64}"`
             ].join(',');
 

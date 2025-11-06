@@ -231,16 +231,6 @@
 // app.listen(PORT, async () => {
 //     // Initialize crypto utilities
 //     await cryptoUtils.initialize();
-//     console.log(`===========================================`);
-//     console.log(`ONDC Integration Server`);
-//     console.log(`===========================================`);
-//     console.log(`Environment: ${config.server.env}`);
-//     console.log(`Port: ${PORT}`);
-//     console.log(`Subscriber ID: ${config.ondc.subscriberId}`);
-//     console.log(`Subscriber URL: ${config.ondc.subscriberUrl}`);
-//     console.log(`Domain: ${config.ondc.domain}`);
-//     console.log(`===========================================`);
-//     console.log(`Server is running on http://localhost:${PORT}`);
 // });
 
 // module.exports = app;

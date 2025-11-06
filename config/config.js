@@ -19,7 +19,7 @@ module.exports = {
         
         // ONDC endpoints
         registryUrl: process.env.REGISTRY_URL || 'https://staging.registry.ondc.org',
-        gatewayUrl: process.env.GATEWAY_URL || 'https://prod.gateway.ondc.org',
+        gatewayUrl: process.env.GATEWAY_URL || 'https://staging.gateway.ondc.org',
         
         // Domain and location
         domain: process.env.DOMAIN || 'ONDC:RET10',

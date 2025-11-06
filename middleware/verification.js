@@ -20,7 +20,7 @@ async function verifyONDCRequest(req, res, next) {
 
         // Verify the request
         const verification = await authManager.verifyAuthHeader(authHeader, req.body);
-        console.log(verification)
+        console.log("verification", verification)
 
         if (!verification.valid) {
             return res.status(401).json({

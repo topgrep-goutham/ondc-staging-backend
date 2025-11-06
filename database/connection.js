@@ -15,7 +15,6 @@ class Database {
                 useUnifiedTopology: true
             });
 
-            console.log('✓ Database connected successfully');
 
             // Handle connection events
             mongoose.connection.on('error', (err) => {
