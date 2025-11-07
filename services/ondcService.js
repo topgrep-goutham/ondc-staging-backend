@@ -365,10 +365,37 @@ class ONDCService {
         return { ...result, transactionId, messageId, payload };
     }
 
-    // Select, Init, Confirm, Status, Cancel, Update, Track APIs
-    // (Keep all other methods from previous ondc-service-corrected artifact)
-    // Just replace cryptoUtils.generateTransactionId() with ondcCrypto.generateTransactionId()
-    // And cryptoUtils.generateMessageId() with ondcCrypto.generateMessageId()
 }
+
+//search results 
+const SearchResult = require('../models/SearchResult');
+
+module.exports.getSearchResults = async (transactionId) => {
+    try {
+        if (!transactionId) {
+            return { status: "ERROR", message: "transaction_id is required" };
+        }
+
+        const record = await SearchResult.findOne({ transactionId });
+
+        if (!record) {
+            return {
+                status: "PENDING",
+                message: "No results yet",
+                catalog: null
+            };
+        }
+
+        return {
+            status: "COMPLETED",
+            catalog: record.catalog
+        };
+
+    } catch (error) {
+        console.error("getSearchResults error:", error);
+        return { status: "ERROR", message: error.message };
+    }
+};
+
 
 module.exports = new ONDCService();
