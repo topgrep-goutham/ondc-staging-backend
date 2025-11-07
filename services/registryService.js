@@ -27,7 +27,7 @@
 
 //             // Call registry API without auth for lookup
 //             console.log(process.env.SIGNING_PUBLIC_KEY)
-//             const lookupData = {
+//             const payload = {
 //                 subscriber_id: subscriberId,
 //                 status: 'SUBSCRIBED',
 //                 type: 'BAP',
@@ -35,12 +35,12 @@
 //             };
 
 //             if (ukId) {
-//                 lookupData.ukId = ukId;
+//                 payload.ukId = ukId;
 //             }
 
 //             const response = await axios.post(
 //                 `${config.ondc.registryUrl}/lookup`,
-//                 lookupData,
+//                 payload,
 //                 {
 //                     headers: {
 //                         'Content-Type': 'application/json'
@@ -127,7 +127,7 @@ class RegistryService {
     /**
      * Lookup subscriber in registry
      */
-    async lookup(subscriberId, ukId) {
+    async lookup(subscriberId, ukId, requestBody) {
         const cacheKey = `${subscriberId}:${ukId || 'default'}`;
 
         // Check cache first
@@ -141,28 +141,39 @@ class RegistryService {
         try {
 
             // Call registry API
-            const lookupData = {
-                'subscriber_id': subscriberId,
-                'type': 'BPP'
+            const payload = {
+                "subscriber_id": subscriberId,
+                "type": "BPP",
+                "domain": requestBody.context.domain
             };
 
-            const authHeader = await authManager.createAuthHeader(lookupData);
+            const authHeader = await authManager.createAuthHeader(payload);
+            // const authHeader = await createAuthorizationHeader({
+            //     body: JSON.stringify(payload),
+            //     privateKey: this.privateKey,
+            //     subscriberId: this.subscriberId,
+            //     subscriberUniqueKeyId: this.subscriberUniqueKeyId
+            // });
 
-            if (ukId) {
-                lookupData.ukId = ukId;
-            }
+            // if (ukId) {
+            //     payload.ukId = ukId;
+            // }
+
+            console.log("payload", payload)
+            console.log("authheader", authHeader)
 
             const response = await axios.post(
                 `${config.ondc.registryUrl}/v2.0/lookup`,
-                lookupData,
+                payload,
                 {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': authHeader
                     },
-                    timeout: 10000
+                    timeout: 30000
                 }
             );
+            console.log(response?.data)
 
             if (response.data && response.data.length > 0) {
                 const entry = response.data[0];

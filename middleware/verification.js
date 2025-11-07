@@ -3,7 +3,9 @@ const authManager = require('../utils/authorization');
 // Middleware to verify incoming ONDC requests
 async function verifyONDCRequest(req, res, next) {
     try {
+        console.log("context", req.body.context.domain)
         const authHeader = req.headers.authorization;
+        console.log(authHeader)
 
         if (!authHeader) {
             return res.status(401).json({

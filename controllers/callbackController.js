@@ -10,14 +10,16 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             // Process catalog asynchronously
             const { context, message } = req.body;
-            
-            
+            console.log("context", context)
+            console.log("Message", message)
+
+
             // TODO: Store catalog in database
             // TODO: Notify user/update UI
-            
+
         } catch (error) {
             console.error('on_search error:', error);
         }
@@ -31,13 +33,13 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
-            
+
+
             // TODO: Store quote in database
             // TODO: Update order status
-            
+
         } catch (error) {
             console.error('on_select error:', error);
         }
@@ -51,12 +53,12 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
+
             // TODO: Store init response
             // TODO: Prepare for confirmation
-            
+
         } catch (error) {
             console.error('on_init error:', error);
         }
@@ -70,13 +72,13 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
+
             // TODO: Store confirmed order in database
             // TODO: Send confirmation to user
             // TODO: Update order status
-            
+
         } catch (error) {
             console.error('on_confirm error:', error);
         }
@@ -90,12 +92,12 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
+
             // TODO: Update order status in database
             // TODO: Notify user of status change
-            
+
         } catch (error) {
             console.error('on_status error:', error);
         }
@@ -109,12 +111,12 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
+
             // TODO: Update order as cancelled
             // TODO: Process refund if applicable
-            
+
         } catch (error) {
             console.error('on_cancel error:', error);
         }
@@ -128,11 +130,11 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
+
             // TODO: Update order in database
-            
+
         } catch (error) {
             console.error('on_update error:', error);
         }
@@ -146,11 +148,11 @@ class CallbackController {
                     ack: { status: 'ACK' }
                 }
             });
-            
+
             const { context, message } = req.body;
-            
+
             // TODO: Store tracking information
-            
+
         } catch (error) {
             console.error('on_track error:', error);
         }

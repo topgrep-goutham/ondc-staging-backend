@@ -333,24 +333,24 @@ class ONDCService {
         const messageId = ondcCrypto.generateMessageId();
 
         const payload = {
-            context: this.createContext('search', transactionId, messageId),
-            message: {
-                intent: {
-                    item: {
-                        descriptor: {
-                            name: searchIntent.keyword || ''
+            "context": this.createContext('search', transactionId, messageId),
+            "message": {
+                "intent": {
+                    "item": {
+                        "descriptor": {
+                            "name": searchIntent.keyword || ''
                         }
                     },
-                    fulfillment: {
-                        type: 'Delivery',
-                        end: {
-                            location: {
-                                gps: searchIntent.gps || '12.9716,77.5946'
+                    "fulfillment": {
+                        "type": 'Delivery',
+                        "end": {
+                            "location": {
+                                "gps": searchIntent.gps || '12.9716,77.5946'
                             }
                         }
                     }
                 },
-                payment: {
+                "payment": {
                     '@ondc/org/buyer_app_finder_fee_type': 'percent',
                     '@ondc/org/buyer_app_finder_fee_amount': '3'
                 }
