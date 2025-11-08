@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-const config = require('../config/config');
+const db = require('../config/db');
 
 class Database {
     constructor() {
@@ -7,35 +6,13 @@ class Database {
     }
 
     async connect() {
-        try {
-            const dbUrl = `mongodb://${config.database.host}:${config.database.port}/${config.database.name}`;
-
-            this.connection = await mongoose.connect(dbUrl, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true
-            });
-
-
-            // Handle connection events
-            mongoose.connection.on('error', (err) => {
-                console.error('Database connection error:', err);
-            });
-
-            mongoose.connection.on('disconnected', () => {
-                console.warn('Database disconnected');
-            });
-
-        } catch (error) {
-            console.error('Database connection failed:', error);
-            throw error;
-        }
+        await db.connect();
+        this.connection = true;
     }
 
     async disconnect() {
-        if (this.connection) {
-            await mongoose.disconnect();
-            console.log('Database disconnected');
-        }
+        await db.close();
+        this.connection = null;
     }
 }
 

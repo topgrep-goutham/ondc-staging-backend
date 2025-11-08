@@ -2,6 +2,9 @@ const ondcService = require('../services/ondcService');
 const SearchResult = require('../models/SearchResult');
 const Transaction = require('../models/Transaction');
 const Order = require('../models/Order');
+const sqlite3 = require('sqlite3').verbose();
+const config = require('../config/config');
+const db = require('../config/db');
 
 class CallbackController {
     // Handle on_search callback
@@ -19,7 +22,7 @@ class CallbackController {
             const txnId = context.transaction_id || context.transactionId;
             const catalog = message.catalog || message;
             console.log('on_search context', context);
-            console.log('catalog size:', catalog ? JSON.stringify(catalog).length : 0);
+            console.log('catalog size:', catalog ? JSON.stringify(catalog) : 0);
 
             // Ensure SearchResult has transactionId when upserting
             await SearchResult.findOneAndUpdate(
@@ -40,6 +43,50 @@ class CallbackController {
                 },
                 { upsert: true }
             );
+
+            // If an sqlite DB is available, try to load product details for this transaction
+            try {
+                const dbPath = config.sqlite?.path || './ondc.bd';
+                if (dbPath && txnId) {
+                    const fetchRows = (sql, params) => new Promise((resolve, reject) => {
+                        const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, err => {
+                            if (err) return reject(err);
+                        });
+                        db.all(sql, params, (err, rows) => {
+                            db.close();
+                            if (err) return reject(err);
+                            resolve(rows);
+                        });
+                    });
+
+                    const sql = 'SELECT * FROM Product_Details WHERE transaction_id = ? ORDER BY id ASC';
+                    const rows = await fetchRows(sql, [txnId]);
+                    if (rows && rows.length) {
+                        const items = rows.map(r => ({
+                            id: r.item_id,
+                            descriptor: { name: r.item_name, code: r.item_code, images: r.image_url ? [r.image_url] : [] },
+                            price: { currency: r.currency, value: r.price_value != null ? r.price_value.toString() : undefined },
+                            category_id: r.category_id,
+                            fulfillment_id: r.fulfillment_id,
+                            location_id: r.location_id
+                        }));
+
+                        const catalogFromSql = {
+                            'bpp/providers': [
+                                { id: rows[0].provider_id, descriptor: { name: rows[0].provider_name }, items }
+                            ]
+                        };
+
+                        await SearchResult.findOneAndUpdate(
+                            { transactionId: txnId },
+                            { transactionId: txnId, catalog: catalogFromSql, updatedAt: new Date() },
+                            { upsert: true, new: true }
+                        );
+                    }
+                }
+            } catch (sqlErr) {
+                console.error('sqlite load error for on_search:', sqlErr);
+            }
 
         } catch (error) {
             console.error('on_search error:', error);
@@ -321,30 +368,63 @@ class CallbackController {
     }
 
     /* NEW METHOD: Used by frontend to fetch results */
+    // async getSearchResults(transactionId) {
+    //     try {
+    //         if (!transactionId) {
+    //             return { status: "ERROR", message: "transaction_id is required" };
+    //         }
+    //         const result = await SearchResult.findOne({ transactionId });
+
+    //         if (!result) {
+    //             return {
+    //                 status: "PENDING",
+    //                 message: "Search results not received yet",
+    //                 catalog: null
+    //             };
+    //         }
+
+    //         return {
+    //             status: "COMPLETED",
+    //             catalog: result.catalog
+    //         };
+
+    //     } catch (error) {
+    //         console.error("getSearchResults error:", error);
+    //         return { status: "ERROR", message: error.message };
+    //     }
+    // }
+
     async getSearchResults(transactionId) {
         try {
-            if (!transactionId) {
-                return { status: "ERROR", message: "transaction_id is required" };
+            if (!transactionId) return { status: 'ERROR', message: 'transaction_id is required' };
+
+            const rows = await db.all(`SELECT * FROM Product_Details WHERE transaction_id = ? ORDER BY id ASC`, [transactionId]);
+
+            if (!rows || !rows.length) {
+                return { status: 'PENDING', message: 'Search results not received yet', catalog: null };
             }
 
-            const result = await SearchResult.findOne({ transactionId });
-
-            if (!result) {
-                return {
-                    status: "PENDING",
-                    message: "Search results not received yet",
-                    catalog: null
-                };
-            }
+            // Return a simple shape the frontend already expects:
+            const items = rows.map(r => ({
+                id: r.item_id,
+                descriptor: { name: r.item_name, code: r.item_code, images: r.image_url ? [r.image_url] : [] },
+                price: { currency: r.currency, value: r.price_value?.toString() },
+                category_id: r.category_id,
+                fulfillment_id: r.fulfillment_id,
+                location_id: r.location_id,
+            }));
 
             return {
-                status: "COMPLETED",
-                catalog: result.catalog
+                status: 'COMPLETED',
+                catalog: {
+                    "bpp/providers": [
+                        { id: rows[0].provider_id, descriptor: { name: rows[0].provider_name }, items }
+                    ]
+                }
             };
-
         } catch (error) {
-            console.error("getSearchResults error:", error);
-            return { status: "ERROR", message: error.message };
+            console.error('getSearchResults error:', error);
+            return { status: 'ERROR', message: error.message };
         }
     }
 }

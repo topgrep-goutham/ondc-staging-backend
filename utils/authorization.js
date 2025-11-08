@@ -302,11 +302,9 @@ class AuthorizationManager {
             if (!params.signature || !params.keyId) throw new Error('Missing required authorization parameters');
 
             const [subscriberId, ukId, algorithm] = params.keyId.split('|');
-            console.log(subscriberId)
             if (algorithm !== 'ed25519') throw new Error('Unsupported algorithm: ' + algorithm);
 
             const registryEntry = await registryService.lookup(subscriberId, ukId, requestBody);
-            console.log(registryEntry)
             if (!registryEntry) throw new Error('Subscriber not found in registry: ' + subscriberId);
             if (registryEntry.status !== 'SUBSCRIBED') throw new Error('Subscriber not in SUBSCRIBED status');
 
@@ -314,7 +312,6 @@ class AuthorizationManager {
             if (!signingPublicKey) throw new Error('Signing public key not found in registry');
 
             const isValid = await ondcCrypto.verifyAuthHeader(authHeader, requestBody, signingPublicKey);
-            console.log(isValid)
             if (!isValid) throw new Error('Signature verification failed');
 
             if (params.expires) {
