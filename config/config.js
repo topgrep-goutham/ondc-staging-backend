@@ -42,6 +42,6 @@ module.exports = {
     ,
     sqlite: {
         // Path to local sqlite file used to source product/search data
-        path: process.env.SQLITE_PATH || './ondc.bd'
+        path: process.env.SQLITE_PATH || '../database/ondc.db'
     }
 };

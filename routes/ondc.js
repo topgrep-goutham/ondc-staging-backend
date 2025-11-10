@@ -3,6 +3,7 @@ const router = express.Router();
 const ondcService = require('../services/ondcService');
 const callbackController = require('../controllers/callbackController');
 const { verifyONDCRequest, checkStaleRequest } = require('../middleware/verification');
+const db = require('../config/db');
 
 // ===== BUYER APP APIS (Outgoing) =====
 
@@ -91,7 +92,7 @@ router.post('/buyer/track', async (req, res) => {
 });
 
 //result data
-router.get('/search/results', async (req, res) => {
+router.get("/search/results", async (req, res) => {
     try {
         const { transaction_id } = req.query;
         const result = await callbackController.getSearchResults(transaction_id);
