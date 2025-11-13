@@ -1,23 +1,10 @@
-// const knex = require('knex');
-
-// const db = knex({
-//     client: 'sqlite3',
-//     connection: {
-//         filename: process.env.SQLITE_PATH  // from .env — your ondc.db path
-//     },
-//     useNullAsDefault: true
-// });
-
-// module.exports = db;
-
-
 const knex = require('knex');
 const path = require('path');
 
 const db = knex({
     client: 'sqlite3',
     connection: {
-        filename: '/tmp/ondc.db'  // from .env — your ondc.db path
+        filename: '/tmp/ondc.db'  
     },
     useNullAsDefault: true
 });

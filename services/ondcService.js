@@ -102,78 +102,7 @@ class ONDCService {
         return { ...result };
     }
 
-    //Select API
-    async select(selectData) {
-        const transactionId = cryptoUtils.generateTransactionId();
-        const messageId = cryptoUtils.generateMessageId();
-
-        const payload = {
-            context: this.createContext(
-                'select',
-                transactionId,
-                messageId,
-                selectData.bppId,
-                selectData.bppUri
-            ),
-            message: {
-                order: {
-                    provider: { id: selectData.providerId },
-                    items: selectData.items.map(item => ({
-                        id: item.id,
-                        quantity: { count: item.quantity }
-                    })),
-                    fulfillments: selectData.fulfillments || [{
-                        end: {
-                            location: {
-                                gps: selectData.gps || '12.9716,77.5946',
-                                address: { area_code: selectData.areaCode || '560001' }
-                            },
-                            contact: {
-                                email: selectData.email || 'buyer@example.com',
-                                phone: selectData.phone || '9999999999'
-                            }
-                        }
-                    }]
-                }
-            }
-        };
-
-        const result = await this.sendRequest(`${selectData.bppUri}/select`, payload);
-        return { ...result, transactionId, messageId };
-    }
-
-
 }
-
-//search results 
-const SearchResult = require('../models/SearchResult');
-
-module.exports.getSearchResults = async (transactionId) => {
-    try {
-        if (!transactionId) {
-            return { status: "ERROR", message: "transaction_id is required" };
-        }
-
-        const record = await SearchResult.findOne({ transactionId });
-
-        if (!record) {
-            return {
-                status: "PENDING",
-                message: "No results yet",
-                catalog: null
-            };
-        }
-
-        return {
-            status: "COMPLETED",
-            catalog: record.catalog
-        };
-
-    } catch (error) {
-        console.error("getSearchResults error:", error);
-        return { status: "ERROR", message: error.message };
-    }
-};
 
 
 module.exports = new ONDCService();

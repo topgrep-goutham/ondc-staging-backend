@@ -75,55 +75,6 @@ class RegistryService {
         }
     }
 
-    /**
-     * vLookup - Advanced registry lookup with signature
-     */
-    async vLookup(params) {
-        try {
-
-            // Create vLookup signature using ONDC SDK
-            const signature = await ondcCrypto.createVLookupSignature({
-                country: params.country || config.ondc.country,
-                domain: params.domain || config.ondc.domain,
-                type: params.type || 'sellerApp',
-                city: params.city || config.ondc.city,
-                subscriber_id: params.subscriber_id,
-            });
-
-            const vLookupPayload = {
-                sender_subscriber_id: config.ondc.subscriberId,
-                request_id: ondcCrypto.generateMessageId(),
-                timestamp: new Date().toISOString(),
-                search_parameters: {
-                    domain: params.domain || config.ondc.domain,
-                    subscriber_id: params.subscriber_id,
-                    country: params.country || config.ondc.country,
-                    type: params.type || 'sellerApp',
-                    city: params.city || config.ondc.city
-                },
-                signature: signature
-            };
-
-            const response = await axios.post(
-                `${config.ondc.registryUrl}/vlookup`,
-                vLookupPayload,
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 10000
-                }
-            );
-
-            return response.data;
-
-        } catch (error) {
-            console.log("lookup error", error.message)
-            console.error('❌ vLookup error:', error.response?.data || error.message);
-            throw error;
-        }
-    }
-
     // Periodic cache refresh
     startCacheRefresh() {
         setInterval(() => {
