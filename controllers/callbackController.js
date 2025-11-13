@@ -434,109 +434,483 @@
 
 
 
-const searchService = require('../services/searchService');
-const db = require('../config/db')
-const pool = require("../config/mysql");
+// const searchService = require('../services/searchService');
+// const db = require('../config/db')
+// const pool = require("../config/mysql");
+
+// class CallbackController {
+//     // Handle on_search callback
+//     // async onSearch(req, res) {
+//     //     try {
+//     //         const { context, message } = req.body;
+
+//     //         console.log('📥 Received on_search callback');
+//     //         console.log('Context:', JSON.stringify(context, null, 2));
+//     //         console.log('Message:', JSON.stringify(message, null, 2));
+
+//     //         // Store search results in database
+//     //         await searchService.storeSearchResults(context, message);
+
+//     //         res.json({
+//     //             message: {
+//     //                 ack: {
+//     //                     status: 'ACK'
+//     //                 }
+//     //             }
+//     //         });
+//     //     } catch (error) {
+//     //         console.error('❌ Error in on_search:', error);
+//     //         res.status(500).json({
+//     //             message: {
+//     //                 ack: {
+//     //                     status: 'NACK'
+//     //                 }
+//     //             },
+//     //             error: {
+//     //                 message: error.message
+//     //             }
+//     //         });
+//     //     }
+//     // }
+
+//     async onSearch(req, res) {
+//         console.log("executed on search .....")
+//         try {
+//             // ACK immediately
+//             res.status(200).json({ message: { ack: { status: 'ACK' } } });
+
+//             const { context, message } = req.body;
+//             const txnId = context?.transaction_id;
+//             const providers = message?.catalog?.['bpp/providers'] || [];
+//             console.log("data from the onsearch API....", txnId, providers, context)
+
+//             if (!txnId || providers.length === 0) {
+//                 console.warn('on_search: missing txn or providers', { txnId, providersLen: providers.length });
+//                 return;
+//             }
+//             console.log("before....")
+//             const conn = await pool.getConnection();
+//             console.log("conn response.....", conn)
+//             try {
+//                 await conn.beginTransaction();
+
+//                 for (const p of providers) {
+//                     const items = p.items || [];
+//                     for (const item of items) {
+//                         const itemId = item.id || null;
+//                         const itemName = item?.descriptor?.name || null;
+//                         const priceValue = item?.price?.value != null ? Number(item.price.value) : null;
+//                         const currency = item?.price?.currency || null;
+//                         const qty =
+//                             item?.quantity?.available?.count != null
+//                                 ? Number(item.quantity.available.count)
+//                                 : null;
+//                         const imageUrl =
+//                             (Array.isArray(item?.descriptor?.images) && item.descriptor.images[0]) || null;
+//                         const rawJson = JSON.stringify(item);
+
+//                         // Upsert by (transaction_id, item_id)
+//                         await conn.execute(
+//                             `INSERT INTO Product_Details
+//               (transaction_id, item_id, item_name, price_value, currency, quantity_available, image_url, raw_json)
+//              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//              ON DUPLICATE KEY UPDATE
+//               item_name = VALUES(item_name),
+//               price_value = VALUES(price_value),
+//               currency = VALUES(currency),
+//               quantity_available = VALUES(quantity_available),
+//               image_url = VALUES(image_url),
+//               raw_json = VALUES(raw_json),
+//               updated_at = CURRENT_TIMESTAMP`,
+//                             [txnId, itemId, itemName, priceValue, currency, qty, imageUrl, rawJson]
+//                         );
+//                     }
+//                 }
+
+//                 const data = await conn.commit();
+//                 console.log(data)
+//             } catch (e) {
+//                 await conn.rollback();
+//                 throw e;
+//             } finally {
+//                 conn.release();
+//             }
+//         } catch (error) {
+//             console.error('on_search error:', error);
+//         }
+//     }
+
+//     // Handle on_select callback
+//     async onSelect(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_select callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             // TODO: Store select results in database
+//             // You can create a similar service for select, init, etc.
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_select:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle on_init callback
+//     async onInit(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_init callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_init:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle on_confirm callback
+//     async onConfirm(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_confirm callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_confirm:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle on_status callback
+//     async onStatus(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_status callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_status:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle on_cancel callback
+//     async onCancel(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_cancel callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_cancel:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle on_update callback
+//     async onUpdate(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_update callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_update:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle on_track callback
+//     async onTrack(req, res) {
+//         try {
+//             const { context, message } = req.body;
+
+//             console.log('📥 Received on_track callback');
+//             console.log('Context:', JSON.stringify(context, null, 2));
+//             console.log('Message:', JSON.stringify(message, null, 2));
+
+//             res.json({
+//                 message: {
+//                     ack: {
+//                         status: 'ACK'
+//                     }
+//                 }
+//             });
+//         } catch (error) {
+//             console.error('❌ Error in on_track:', error);
+//             res.status(500).json({
+//                 message: {
+//                     ack: {
+//                         status: 'NACK'
+//                     }
+//                 },
+//                 error: {
+//                     message: error.message
+//                 }
+//             });
+//         }
+//     }
+
+//     // Handle search result Get APi
+//     // async getSearchResults(transactionId) {
+//     //     try {
+//     //         if (!transactionId) {
+//     //             return { status: "ERROR", message: "transaction_id is required" };
+//     //         }
+
+//     //         const conn = await pool.getConnection();
+//     //         const [rows] = await conn.query(
+//     //             `SELECT item_id, item_name, price_value, currency,
+//     //                 quantity_available, image_url, raw_json
+//     //          FROM Product_Details
+//     //          WHERE transaction_id = ?
+//     //          ORDER BY id ASC`,
+//     //             [transactionId]
+//     //         );
+//     //         conn.release();
+
+//     //         if (!rows.length) {
+//     //             return { status: "PENDING", catalog: null };
+//     //         }
+
+//     //         const items = rows.map(r => ({
+//     //             id: r.item_id,
+//     //             descriptor: {
+//     //                 name: r.item_name,
+//     //                 images: r.image_url ? [r.image_url] : []
+//     //             },
+//     //             price: {
+//     //                 currency: r.currency,
+//     //                 value: r.price_value?.toString()
+//     //             },
+//     //             quantity_available: r.quantity_available
+//     //         }));
+
+//     //         return {
+//     //             status: "COMPLETED",
+//     //             catalog: {
+//     //                 "bpp/providers": [
+//     //                     {
+//     //                         id: "provider-001",     // optional static/provider mapping
+//     //                         descriptor: { name: "Provider" },
+//     //                         items
+//     //                     }
+//     //                 ]
+//     //             }
+//     //         };
+
+//     //     } catch (error) {
+//     //         console.error("getSearchResults error:", error);
+//     //         return { status: "ERROR", message: error.message };
+//     //     }
+//     // }
+
+//     async getSearchResults(transactionId) {
+//         try {
+//             if (!transactionId) {
+//                 return { status: 'ERROR', message: 'transaction_id is required' };
+//             }
+
+//             const [rows] = await pool.execute(
+//                 'SELECT * FROM Product_Details WHERE transaction_id = ? ORDER BY id ASC',
+//                 [transactionId]
+//             );
+
+//             if (!rows || rows.length === 0) {
+//                 return { status: 'PENDING', message: 'Search results not received yet', catalog: null };
+//             }
+
+//             // Build a minimal ONDC-like catalog shape for your frontend
+//             const items = rows.map(r => ({
+//                 id: r.item_id,
+//                 descriptor: {
+//                     name: r.item_name,
+//                     images: r.image_url ? [r.image_url] : []
+//                 },
+//                 price: {
+//                     currency: r.currency,
+//                     value: r.price_value != null ? String(r.price_value) : null
+//                 },
+//                 quantity: r.quantity_available != null ? { available: { count: r.quantity_available } } : undefined
+//             }));
+
+//             return {
+//                 status: 'COMPLETED',
+//                 catalog: {
+//                     "bpp/providers": [
+//                         {
+//                             id: "provider-unknown",
+//                             descriptor: { name: "Provider" },
+//                             items
+//                         }
+//                     ]
+//                 }
+//             };
+//         } catch (error) {
+//             console.error('getSearchResults error:', error);
+//             return { status: 'ERROR', message: error.message };
+//         }
+//     }
+// }
+
+// module.exports = new CallbackController();
+
+const db = require('../config/knex');
 
 class CallbackController {
-    // Handle on_search callback
-    // async onSearch(req, res) {
-    //     try {
-    //         const { context, message } = req.body;
-
-    //         console.log('📥 Received on_search callback');
-    //         console.log('Context:', JSON.stringify(context, null, 2));
-    //         console.log('Message:', JSON.stringify(message, null, 2));
-
-    //         // Store search results in database
-    //         await searchService.storeSearchResults(context, message);
-
-    //         res.json({
-    //             message: {
-    //                 ack: {
-    //                     status: 'ACK'
-    //                 }
-    //             }
-    //         });
-    //     } catch (error) {
-    //         console.error('❌ Error in on_search:', error);
-    //         res.status(500).json({
-    //             message: {
-    //                 ack: {
-    //                     status: 'NACK'
-    //                 }
-    //             },
-    //             error: {
-    //                 message: error.message
-    //             }
-    //         });
-    //     }
-    // }
-
+    // Handle on_search callback - store in SQLite
     async onSearch(req, res) {
-        console.log("executed on search .....")
         try {
-            // ACK immediately
-            res.status(200).json({ message: { ack: { status: 'ACK' } } });
-
             const { context, message } = req.body;
-            const txnId = context?.transaction_id;
-            const providers = message?.catalog?.['bpp/providers'] || [];
-            console.log("data from the onsearch API....", txnId, providers, context)
 
-            if (!txnId || providers.length === 0) {
-                console.warn('on_search: missing txn or providers', { txnId, providersLen: providers.length });
+            console.log('📥 Received on_search callback');
+
+            // Send ACK immediately
+            res.status(200).json({
+                message: {
+                    ack: { status: 'ACK' }
+                }
+            });
+
+            // Store in database asynchronously
+            const transactionId = context?.transaction_id || context?.transactionId;
+            const messageId = context?.message_id || context?.messageId;
+
+            console.log("transaction.........", transactionId)
+
+            if (!transactionId) {
+                console.error('❌ Missing transaction_id in context');
                 return;
             }
-            console.log("before....")
-            const conn = await pool.getConnection();
-            console.log("conn response.....", conn)
-            try {
-                await conn.beginTransaction();
 
-                for (const p of providers) {
-                    const items = p.items || [];
-                    for (const item of items) {
-                        const itemId = item.id || null;
-                        const itemName = item?.descriptor?.name || null;
-                        const priceValue = item?.price?.value != null ? Number(item.price.value) : null;
-                        const currency = item?.price?.currency || null;
-                        const qty =
-                            item?.quantity?.available?.count != null
-                                ? Number(item.quantity.available.count)
-                                : null;
-                        const imageUrl =
-                            (Array.isArray(item?.descriptor?.images) && item.descriptor.images[0]) || null;
-                        const rawJson = JSON.stringify(item);
+            console.log("executed....")
 
-                        // Upsert by (transaction_id, item_id)
-                        await conn.execute(
-                            `INSERT INTO Product_Details
-              (transaction_id, item_id, item_name, price_value, currency, quantity_available, image_url, raw_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-              item_name = VALUES(item_name),
-              price_value = VALUES(price_value),
-              currency = VALUES(currency),
-              quantity_available = VALUES(quantity_available),
-              image_url = VALUES(image_url),
-              raw_json = VALUES(raw_json),
-              updated_at = CURRENT_TIMESTAMP`,
-                            [txnId, itemId, itemName, priceValue, currency, qty, imageUrl, rawJson]
-                        );
-                    }
-                }
+            // Insert or update the search result
+            const data = await db('on_search_results')
+                .insert({
+                    transaction_id: transactionId,
+                    message_id: messageId,
+                    context: JSON.stringify(context),
+                    message: JSON.stringify(message)
+                })
+                .onConflict('transaction_id')
+                .merge(); // Update if exists
 
-                const data = await conn.commit();
-                console.log(data)
-            } catch (e) {
-                await conn.rollback();
-                throw e;
-            } finally {
-                conn.release();
-            }
+            console.log("data...", data)
+
+            console.log('✅ Stored on_search data for transaction:', transactionId);
+
         } catch (error) {
-            console.error('on_search error:', error);
+            console.error('❌ Error in on_search:', error);
         }
     }
 
@@ -544,32 +918,18 @@ class CallbackController {
     async onSelect(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_select callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
-
-            // TODO: Store select results in database
-            // You can create a similar service for select, init, etc.
 
             res.json({
                 message: {
-                    ack: {
-                        status: 'ACK'
-                    }
+                    ack: { status: 'ACK' }
                 }
             });
         } catch (error) {
             console.error('❌ Error in on_select:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
@@ -578,29 +938,16 @@ class CallbackController {
     async onInit(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_init callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
 
             res.json({
-                message: {
-                    ack: {
-                        status: 'ACK'
-                    }
-                }
+                message: { ack: { status: 'ACK' } }
             });
         } catch (error) {
             console.error('❌ Error in on_init:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
@@ -609,29 +956,16 @@ class CallbackController {
     async onConfirm(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_confirm callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
 
             res.json({
-                message: {
-                    ack: {
-                        status: 'ACK'
-                    }
-                }
+                message: { ack: { status: 'ACK' } }
             });
         } catch (error) {
             console.error('❌ Error in on_confirm:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
@@ -640,29 +974,16 @@ class CallbackController {
     async onStatus(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_status callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
 
             res.json({
-                message: {
-                    ack: {
-                        status: 'ACK'
-                    }
-                }
+                message: { ack: { status: 'ACK' } }
             });
         } catch (error) {
             console.error('❌ Error in on_status:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
@@ -671,29 +992,16 @@ class CallbackController {
     async onCancel(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_cancel callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
 
             res.json({
-                message: {
-                    ack: {
-                        status: 'ACK'
-                    }
-                }
+                message: { ack: { status: 'ACK' } }
             });
         } catch (error) {
             console.error('❌ Error in on_cancel:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
@@ -702,29 +1010,16 @@ class CallbackController {
     async onUpdate(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_update callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
 
             res.json({
-                message: {
-                    ack: {
-                        status: 'ACK'
-                    }
-                }
+                message: { ack: { status: 'ACK' } }
             });
         } catch (error) {
             console.error('❌ Error in on_update:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
@@ -733,131 +1028,75 @@ class CallbackController {
     async onTrack(req, res) {
         try {
             const { context, message } = req.body;
-
             console.log('📥 Received on_track callback');
-            console.log('Context:', JSON.stringify(context, null, 2));
-            console.log('Message:', JSON.stringify(message, null, 2));
 
             res.json({
-                message: {
-                    ack: {
-                        status: 'ACK'
-                    }
-                }
+                message: { ack: { status: 'ACK' } }
             });
         } catch (error) {
             console.error('❌ Error in on_track:', error);
             res.status(500).json({
-                message: {
-                    ack: {
-                        status: 'NACK'
-                    }
-                },
-                error: {
-                    message: error.message
-                }
+                message: { ack: { status: 'NACK' } },
+                error: { message: error.message }
             });
         }
     }
 
-    // Handle search result Get APi
-    // async getSearchResults(transactionId) {
-    //     try {
-    //         if (!transactionId) {
-    //             return { status: "ERROR", message: "transaction_id is required" };
-    //         }
-
-    //         const conn = await pool.getConnection();
-    //         const [rows] = await conn.query(
-    //             `SELECT item_id, item_name, price_value, currency,
-    //                 quantity_available, image_url, raw_json
-    //          FROM Product_Details
-    //          WHERE transaction_id = ?
-    //          ORDER BY id ASC`,
-    //             [transactionId]
-    //         );
-    //         conn.release();
-
-    //         if (!rows.length) {
-    //             return { status: "PENDING", catalog: null };
-    //         }
-
-    //         const items = rows.map(r => ({
-    //             id: r.item_id,
-    //             descriptor: {
-    //                 name: r.item_name,
-    //                 images: r.image_url ? [r.image_url] : []
-    //             },
-    //             price: {
-    //                 currency: r.currency,
-    //                 value: r.price_value?.toString()
-    //             },
-    //             quantity_available: r.quantity_available
-    //         }));
-
-    //         return {
-    //             status: "COMPLETED",
-    //             catalog: {
-    //                 "bpp/providers": [
-    //                     {
-    //                         id: "provider-001",     // optional static/provider mapping
-    //                         descriptor: { name: "Provider" },
-    //                         items
-    //                     }
-    //                 ]
-    //             }
-    //         };
-
-    //     } catch (error) {
-    //         console.error("getSearchResults error:", error);
-    //         return { status: "ERROR", message: error.message };
-    //     }
-    // }
-
+    // Get search results by transaction ID
     async getSearchResults(transactionId) {
         try {
             if (!transactionId) {
                 return { status: 'ERROR', message: 'transaction_id is required' };
             }
+            const result = await db('on_search_results')
+                .where('transaction_id', transactionId)
+                .first();
+            console.log("result data...", result)
 
-            const [rows] = await pool.execute(
-                'SELECT * FROM Product_Details WHERE transaction_id = ? ORDER BY id ASC',
-                [transactionId]
-            );
-
-            if (!rows || rows.length === 0) {
-                return { status: 'PENDING', message: 'Search results not received yet', catalog: null };
+            if (!result) {
+                return {
+                    status: 'PENDING',
+                    message: 'Search results not received yet',
+                    data: null
+                };
             }
-
-            // Build a minimal ONDC-like catalog shape for your frontend
-            const items = rows.map(r => ({
-                id: r.item_id,
-                descriptor: {
-                    name: r.item_name,
-                    images: r.image_url ? [r.image_url] : []
-                },
-                price: {
-                    currency: r.currency,
-                    value: r.price_value != null ? String(r.price_value) : null
-                },
-                quantity: r.quantity_available != null ? { available: { count: r.quantity_available } } : undefined
-            }));
 
             return {
                 status: 'COMPLETED',
-                catalog: {
-                    "bpp/providers": [
-                        {
-                            id: "provider-unknown",
-                            descriptor: { name: "Provider" },
-                            items
-                        }
-                    ]
+                data: {
+                    transaction_id: result.transaction_id,
+                    message_id: result.message_id,
+                    context: JSON.parse(result.context),
+                    message: JSON.parse(result.message),
+                    created_at: result.created_at
                 }
             };
+
         } catch (error) {
-            console.error('getSearchResults error:', error);
+            console.error('❌ getSearchResults error:', error);
             return { status: 'ERROR', message: error.message };
+        }
+    }
+
+    // Get all search results (paginated)
+    async getAllSearchResults(limit = 50, offset = 0) {
+        try {
+            const results = await db('on_search_results')
+                .orderBy('created_at', 'desc')
+                .limit(limit)
+                .offset(offset);
+
+            return results.map(row => ({
+                transaction_id: row.transaction_id,
+                message_id: row.message_id,
+                context: JSON.parse(row.context),
+                message: JSON.parse(row.message),
+                created_at: row.created_at
+            }));
+
+        } catch (error) {
+            console.error('❌ getAllSearchResults error:', error);
+            throw error;
         }
     }
 }
